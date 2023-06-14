@@ -1,7 +1,9 @@
 import { Context } from "koa";
 import * as argon2 from "argon2";
 import { getManager } from "typeorm";
+import jwt from "jsonwebtoken";
 import { User } from "../entity/user";
+import { JWT_SECRET } from "../constants";
 
 interface UserType {
   name: string;
@@ -12,7 +14,34 @@ interface UserType {
 export default class AuthController {
   // 登录
   public static async login(ctx: Context) {
-    ctx.body = "Login controller";
+    const userRepository = getManager().getRepository(User);
+    const body = ctx.request.body as UserType;
+
+    if (body.name) {
+      const user = await userRepository
+        .createQueryBuilder()
+        .where({ name: body.name })
+        .addSelect("User.password")
+        .getOne();
+
+      if (!user) {
+        ctx.status == 401;
+        ctx.body = { message: "用户不存在" };
+      } else if (await argon2.verify(user.password, body.password)) {
+        ctx.status = 200;
+        ctx.body = {
+          message: "成功",
+          token: jwt.sign({ id: user.id }, JWT_SECRET),
+        };
+      } else {
+        ctx.status = 401;
+        ctx.body = { message: "账号或密码错误" };
+      }
+    } else {
+      ctx.status = 401;
+      ctx.body = { message: "账号或密码错误" };
+    }
+    // ctx.body = "Login controller";
   }
 
   // 注册
