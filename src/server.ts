@@ -18,6 +18,16 @@ createConnection()
     app.use(logger()); // 日志
     app.use(cors()); // 跨域 cors
     app.use(bodyParser()); // 请求体解析
+    // 错误处理中间件
+    app.use(async (ctx, next) => {
+      try {
+        await next();
+      } catch (error) {
+        // 只返回 json 格式的响应
+        ctx.status = error.status || 500;
+        ctx.body = { status: error.status, message: error.message };
+      }
+    });
     // 注册中间件 end
 
     // 响应用户请求

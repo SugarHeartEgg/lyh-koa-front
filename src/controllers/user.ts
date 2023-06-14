@@ -1,6 +1,11 @@
 import { Context } from "koa";
 import { getManager } from "typeorm";
 import { User } from "../entity/user";
+import {
+  NotFoundException,
+  ForbiddenException,
+  ServiceException,
+} from "../exceptions";
 
 interface BodyType {
   id: number;
@@ -12,8 +17,13 @@ export default class UserController {
   public static async listUsers(ctx: Context) {
     const userRepository = getManager().getRepository(User);
     const users = await userRepository.find();
-    ctx.status = 200;
-    ctx.body = users;
+
+    if (users) {
+      ctx.status = 200;
+      ctx.body = users;
+    } else {
+      throw new NotFoundException();
+    }
     // ctx.body = "ListUsers controller";
   }
 
@@ -30,10 +40,10 @@ export default class UserController {
         ctx.status = 200;
         ctx.body = user;
       } else {
-        ctx.status = 500;
+        throw new ServiceException();
       }
     } else {
-      ctx.status = 500;
+      throw new ServiceException();
     }
 
     // ctx.body = `ShowUserDetails controller with ID = ${ctx.params.id}`;
@@ -43,9 +53,7 @@ export default class UserController {
     const body = ctx.request.body as BodyType;
 
     if (body.id !== +ctx.state.user.id) {
-      ctx.status = 403;
-      ctx.body = { message: "无权进行此操作" };
-      return;
+      throw new ForbiddenException("无权进行此操作");
     }
 
     const userRepository = getManager().getRepository(User);
@@ -62,10 +70,10 @@ export default class UserController {
         ctx.status = 200;
         ctx.body = updatedUser;
       } else {
-        ctx.status = 500;
+        throw new ServiceException();
       }
     } else {
-      ctx.status = 500;
+      throw new ServiceException();
     }
     // ctx.body = `UpdateUser controller with ID = ${ctx.params.id}`;
   }
@@ -74,9 +82,7 @@ export default class UserController {
     const body = ctx.request.body as BodyType;
 
     if (body.id !== +ctx.state.user.id) {
-      ctx.status = 403;
-      ctx.body = { message: "无权进行此操作" };
-      return;
+      throw new ForbiddenException("无权进行此操作");
     }
 
     const userRepository = getManager().getRepository(User);

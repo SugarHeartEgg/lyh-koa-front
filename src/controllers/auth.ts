@@ -4,6 +4,7 @@ import { getManager } from "typeorm";
 import jwt from "jsonwebtoken";
 import { User } from "../entity/user";
 import { JWT_SECRET } from "../constants";
+import { UnauthorizedException } from "../exceptions";
 
 interface UserType {
   name: string;
@@ -25,21 +26,18 @@ export default class AuthController {
         .getOne();
 
       if (!user) {
-        ctx.status == 401;
-        ctx.body = { message: "用户不存在" };
+        throw new UnauthorizedException("用户不存在");
       } else if (await argon2.verify(user.password, body.password)) {
         ctx.status = 200;
         ctx.body = {
           message: "成功",
-          token: jwt.sign({ id: user.id }, JWT_SECRET),
+          token: `Bearer ${jwt.sign({ id: user.id }, JWT_SECRET)}`,
         };
       } else {
-        ctx.status = 401;
-        ctx.body = { message: "账号或密码错误" };
+        throw new UnauthorizedException("账号或密码错误");
       }
     } else {
-      ctx.status = 401;
-      ctx.body = { message: "账号或密码错误" };
+      throw new UnauthorizedException("账号或密码错误");
     }
     // ctx.body = "Login controller";
   }
