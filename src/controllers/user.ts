@@ -18,15 +18,12 @@ export default class UserController {
   }
 
   public static async showUserDetails(ctx: Context) {
-    const userRepository = getManager().getRepository(User);
+    const id = ctx.query.id || ctx.params.id;
 
-    // const query = ctx.query;
-    // const params = ctx.params;
-
-    if (ctx?.params?.id) {
-      const id = +ctx?.params?.id;
+    if (id) {
+      const userRepository = getManager().getRepository(User);
       const user = await userRepository.findOneBy({
-        id,
+        id: +id,
       });
 
       if (user) {
@@ -43,8 +40,15 @@ export default class UserController {
   }
 
   public static async updateUser(ctx: Context) {
-    const userRepository = getManager().getRepository(User);
     const body = ctx.request.body as BodyType;
+
+    if (body.id !== +ctx.state.user.id) {
+      ctx.status = 403;
+      ctx.body = { message: "无权进行此操作" };
+      return;
+    }
+
+    const userRepository = getManager().getRepository(User);
     let userInfo = await userRepository.findOneBy({ id: body.id });
 
     if (userInfo) {
@@ -67,8 +71,15 @@ export default class UserController {
   }
 
   public static async deleteUser(ctx: Context) {
-    const userRepository = getManager().getRepository(User);
     const body = ctx.request.body as BodyType;
+
+    if (body.id !== +ctx.state.user.id) {
+      ctx.status = 403;
+      ctx.body = { message: "无权进行此操作" };
+      return;
+    }
+
+    const userRepository = getManager().getRepository(User);
     await userRepository.delete(body.id);
     ctx.status = 204;
     // ctx.body = `DeleteUser controller with ID = ${ctx.params.id}`;
